@@ -9,9 +9,9 @@ class FSM {
         else{
             this.initialState = config.initial;
             this.states = config.states;
-            this.activeState = config.initial;
-            this.statesHistory = [];
-            this.currentStateIndex;
+            //this.activeState = config.initial;
+            this.statesHistory = [config.initial];
+            this.currentStateIndex = 0;
         }
 
     }
@@ -20,7 +20,7 @@ class FSM {
      * @returns {String}
      */
     getState() {
-        return this.activeState;
+        return this.statesHistory[this.currentStateIndex];
     }
 
     /**
@@ -30,7 +30,7 @@ class FSM {
     changeState(state) {
         for (let key in this.states){
             if (key == state) {
-                this.activeState = state;
+                //this.activeState = state;
                 this.statesHistory.push(state);
                 this.currentStateIndex = this.statesHistory.length - 1;
                 return;
@@ -44,24 +44,31 @@ class FSM {
      * @param event
      */
     trigger(event) {
-        console.log(" " + this.states[this.activeState]['transitions'][event] + " event " + event + this.activeState);
+        console.log("trrrrr")
+        var activeState = this.statesHistory[this.currentStateIndex];
+        console.log(this.states[activeState]);
+        var newState = this.states[activeState]['transitions'][event];
+        console.log("activeState " + activeState + " newState " + newState + " event " + event);
         if (!event){
             throw new Error();
             return;
-        }else if (!this.states[this.activeState] || !this.states[this.activeState]['transitions'][event])
+        }else if (!this.states[activeState] || !newState)
         {
             throw new Error();
             return;
         }
 
-        this.activeState = this.states[this.activeState]["transitions"][event];
+        if (newState == this.statesHistory[this.statesHistory.length - 1]) return;
+
+        this.statesHistory.push(newState);
+        this.currentStateIndex = this.statesHistory.length - 1;
     }
 
     /**
      * Resets FSM state to initial.
      */
     reset() {
-        this.activeState = this.initialState;
+        this.changeState(this.initialState);
         //this.clearHistory();
     }
 
@@ -72,8 +79,8 @@ class FSM {
      * @returns {Array}
      */
     getStates(event) {
-        console.log("getStates");
-        console.log("event " + event);
+        //console.log("getStates");
+        //console.log("event " + event);
         var states = [];
         var isUnique = function(state){
             for (let i = 0; i < states.length; i++){
@@ -101,7 +108,26 @@ class FSM {
      * @returns {Boolean}
      */
     undo() {
-        this.activeState = this.statesHistory.pop();
+        if (this.statesHistory[this.currentStateIndex - 1]) {
+            console.log("undo" + this.statesHistory[this.currentStateIndex - 1]);
+            this.currentStateIndex = this.currentStateIndex - 1;
+            return true;
+        }
+        return false;
+        /*var currentState = this.activeState;
+
+        if (currentState == this.initialState) return false;
+
+        for(let state in this.states){
+            for (let transition in this.states[state].transitions){
+                if (this.states[state].transitions[transition] == currentState){
+                    this.activeState = state;
+                    return true;
+                }
+
+            }
+        }
+        return false;*/
     }
 
     /**
@@ -109,7 +135,13 @@ class FSM {
      * Returns false if redo is not available.
      * @returns {Boolean}
      */
-    redo() {}
+    redo() {
+        if (this.statesHistory[this.currentStateIndex + 1]) {
+            this.currentStateIndex = this.currentStateIndex + 1;
+            return true;
+        }
+        return false;
+    }
 
     /**
      * Clears transition history
